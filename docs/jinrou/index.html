@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人狼ゲーム</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="gameArea">
+            <h1>人狼ゲーム</h1>
+            
+            <div id="setupPhase" class="phase">
+                <h2>ゲーム設定</h2>
+                <label for="playerCount">プレイヤー数: </label>
+                <select id="playerCount">
+                    <option value="4">4人</option>
+                    <option value="5">5人</option>
+                    <option value="6" selected>6人</option>
+                    <option value="7">7人</option>
+                    <option value="8">8人</option>
+                    <option value="9">9人</option>
+                    <option value="10">10人</option>
+                    <option value="11">11人</option>
+                    <option value="12">12人</option>
+                    <option value="13">13人</option>
+                    <option value="14">14人</option>
+                    <option value="15">15人</option>
+                    <option value="16">16人</option>
+                    <option value="17">17人</option>
+                    <option value="18">18人</option>
+                </select>
+                
+                <div style="margin-top: 20px;">
+                    <h3>陣営構成</h3>
+                    <label for="werewolfCount">人狼陣営: </label>
+                    <select id="werewolfCount">
+                        <option value="1">1人</option>
+                        <option value="2" selected>2人</option>
+                        <option value="3">3人</option>
+                        <option value="4">4人</option>
+                        <option value="5">5人</option>
+                        <option value="6">6人</option>
+                    </select>
+                    <br><br>
+                    <label for="villageCount">村人陣営: </label>
+                    <select id="villageCount">
+                        <option value="0">0人</option>
+                        <option value="1">1人</option>
+                        <option value="2">2人</option>
+                        <option value="3" selected>3人</option>
+                        <option value="4">4人</option>
+                        <option value="5">5人</option>
+                        <option value="6">6人</option>
+                        <option value="7">7人</option>
+                        <option value="8">8人</option>
+                        <option value="9">9人</option>
+                        <option value="10">10人</option>
+                        <option value="11">11人</option>
+                        <option value="12">12人</option>
+                        <option value="13">13人</option>
+                        <option value="14">14人</option>
+                        <option value="15">15人</option>
+                        <option value="16">16人</option>
+                        <option value="17">17人</option>
+                        <option value="18">18人</option>
+                    </select>
+                    <br><br>
+                    <label for="thirdCount">第三陣営: </label>
+                    <select id="thirdCount">
+                        <option value="0">0人</option>
+                        <option value="1" selected>1人</option>
+                        <option value="2">2人</option>
+                        <option value="3">3人</option>
+                        <option value="4">4人</option>
+                        <option value="5">5人</option>
+                        <option value="6">6人</option>
+                        <option value="7">7人</option>
+                        <option value="8">8人</option>
+                        <option value="9">9人</option>
+                        <option value="10">10人</option>
+                        <option value="11">11人</option>
+                        <option value="12">12人</option>
+                        <option value="13">13人</option>
+                        <option value="14">14人</option>
+                        <option value="15">15人</option>
+                        <option value="16">16人</option>
+                        <option value="17">17人</option>
+                        <option value="18">18人</option>
+                    </select>
+                </div>
+                
+                <div style="margin-top: 20px; border-top: 2px solid #ccc; padding-top: 20px;">
+                    <h3>プレイヤー名設定</h3>
+                    <button id="noNameBtn" style="margin-top: 10px; margin-right: 10px; padding: 10px 20px;">名前入力なし</button>
+                    <button id="withNameBtn" style="margin-top: 10px; padding: 10px 20px;">名前入力あり</button>
+                </div>
+                
+                <div id="nameInputArea" style="display: none; margin-top: 20px; background-color: rgba(100, 200, 100, 0.1); padding: 15px; border-radius: 5px;">
+                    <h4>プレイヤー名を入力してください</h4>
+                    <div id="playerNameInputs"></div>
+                </div>
+                
+                <button id="startBtn" style="margin-top: 20px;">ゲーム開始</button>
+            </div>
+
+            <div id="rolePhase" class="phase" style="display: none;">
+                <h2>役職確認フェーズ</h2>
+                <p id="roleMessage"></p>
+                <div id="roleDescription" style="background-color: rgba(100, 150, 200, 0.7); padding: 15px; border-radius: 5px; margin: 15px 0; border: 2px solid #4488ff; display: none;">
+                    <p id="roleDescriptionText" style="color: #ffffff; font-weight: bold;"></p>
+                </div>
+                <div id="werewolfPartners" style="display: none; background-color: rgba(200, 100, 100, 0.7); padding: 15px; border-radius: 5px; margin: 15px 0; border: 2px solid #ff4444;">
+                    <p id="partnersText" style="color: #ffaa00; font-weight: bold;"></p>
+                </div>
+                <div id="playerConfirm" class="playerConfirm"></div>
+                <div id="confirmButtonArea">
+                    <button id="confirmYesBtn">はいそうです</button>
+                </div>
+                <div id="currentPlayerRole" class="currentPlayerRole" style="display: none;"></div>
+                <div id="roleButtonArea">
+                    <button id="confirmRoleBtn">はい、見ました</button>
+                </div>
+            </div>
+
+            <div id="dayPhase" class="phase" style="display: none;">
+                <div id="deathAnnouncement" style="display: none; background-color: rgba(100, 20, 20, 0.8); padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #ff4444;">
+                    <p id="deathMessage" style="color: #ff4444; font-size: 1.2em; font-weight: bold;"></p>
+                </div>
+                <h2>昼のターン - 話し合いフェーズ</h2>
+                <div id="timerContainer" class="timerContainer">
+                    <button id="decreaseBtn" class="timerBtn">−</button>
+                    <div id="timerDisplay" class="timerDisplay">3:00</div>
+                    <button id="increaseBtn" class="timerBtn">+</button>
+                </div>
+                <p id="dayMessage"></p>
+                <button id="startVotingBtn" class="actionBtn" style="display: block;">投票する</button>
+                
+                <div id="votingArea" class="votingArea" style="display: none;"></div>
+                <div id="voteResult"></div>
+            </div>
+
+            <div id="nightPhase" class="phase" style="display: none;">
+                <h2>夜のターン - 睡眠フェーズ</h2>
+                <p id="nightPlayerCheck"></p>
+                <div id="nightConfirmArea">
+                    <button id="nightConfirmBtn">はいそうです</button>
+                </div>
+                
+                <div id="nightActionArea" style="display: none;">
+                    <p id="nightActionMessage"></p>
+                    <div id="targetArea" class="targetArea"></div>
+                    <p id="restingMessage"></p>
+                    <button id="restBtn" style="display: none;">体を休める</button>
+                </div>
+                
+                <div id="nightResult"></div>
+            </div>
+
+            <div id="gameEndPhase" class="phase" style="display: none;">
+                <h2>ゲーム終了</h2>
+                <p id="endMessage"></p>
+                <div id="finalStats"></div>
+                <button id="restartBtn">もう一度プレイ</button>
+            </div>
+
+            <div id="roleDistribution">
+                <h3>役職配分（初期）</h3>
+                <div id="distribution"></div>
+            </div>
+        </div>
+    </div>
+
+            <!-- 右上に役職一覧ボタン（タップでモーダル表示） -->
+            <button id="roleListBtn" style="position: fixed; top: 12px; right: 12px; z-index: 1200; padding:8px 12px; border-radius:6px; background:#333; color:#fff; border:none; box-shadow:0 2px 6px rgba(0,0,0,0.3);">役職一覧</button>
+
+            <!-- 役職一覧モーダル -->
+            <div id="roleListModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:1300;">
+                <div style="position:absolute; right:12px; top:12px; width:360px; max-height:90%; overflow:auto; background:#fff; padding:14px; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,0.4);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <h3 style="margin:0; font-size:1.05em;">役職一覧</h3>
+                        <button id="closeRoleListBtn" style="background:#e74c3c; color:#fff; border:none; padding:6px 8px; border-radius:6px;">閉じる</button>
+                    </div>
+                    <div id="roleListContent" style="font-size:0.95em; line-height:1.4; color:#222;"></div>
+                </div>
+                
+                <!-- 乗っ取り強さランキング -->
+                <div style="position:absolute; left:12px; top:12px; width:280px; max-height:90%; overflow:auto; background:#fff; padding:14px; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,0.4);">
+                    <h3 style="margin:0 0 12px 0; font-size:1.05em; color:#333;">乗っ取り強さランキング</h3>
+                    <div style="font-size:0.9em; line-height:1.6; color:#222;">
+                        <div style="margin-bottom:10px; padding:8px; background:#FF69B4; color:#fff; border-radius:4px;">
+                            <strong>第1位：吊人・サバイバー</strong><br>
+                            <span style="font-size:0.85em;">独立勝利・共存可能</span>
+                        </div>
+                        <div style="margin-bottom:10px; padding:8px; background:#ff9933; color:#fff; border-radius:4px;">
+                            <strong>第2位：妖狐</strong><br>
+                            <span style="font-size:0.85em;">乗っ取り勝利の最強陣営</span>
+                        </div>
+                        <div style="margin-bottom:10px; padding:8px; background:#8B008B; color:#fff; border-radius:4px;">
+                            <strong>第3位：ネクロマンサー</strong><br>
+                            <span style="font-size:0.85em;">霊人操作による独立勝利</span>
+                        </div>
+                        <div style="margin-bottom:10px; padding:8px; background:#FF1493; color:#fff; border-radius:4px;">
+                            <strong>第4位：ラバーズ（キューピット）</strong><br>
+                            <span style="font-size:0.85em;">連動勝利の特殊陣営</span>
+                        </div>
+                        <div style="padding:8px; background:#CCCCCC; color:#333; border-radius:4px;">
+                            <strong>番外：村人陣営・人狼陣営・計画者陣営</strong><br>
+                            <span style="font-size:0.85em;">乗っ取り要素なし</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+
+    <script>
+        // 役職一覧モーダルの表示ロジック
+        function buildRoleList() {
+            const container = document.getElementById('roleListContent');
+            if (!window.GAME_CONFIG || !GAME_CONFIG.roleDescriptions) {
+                container.innerHTML = '<p>役職データが読み込まれていません。</p>';
+                return;
+            }
+            const roles = GAME_CONFIG.roleDescriptions;
+            const implemented = Array.isArray(GAME_CONFIG.implementedRoles) ? GAME_CONFIG.implementedRoles : Object.keys(roles);
+            const groups = {};
+            for (const key of implemented) {
+                const r = roles[key];
+                if (!r) continue;
+                const faction = r.faction || 'その他';
+                if (!groups[faction]) groups[faction] = [];
+                groups[faction].push({ key, name: r.name, desc: r.description, color: r.color });
+            }
+
+            let html = '';
+            for (const faction of Object.keys(groups)) {
+                html += `<div style="margin-bottom:10px;"><strong>【${faction}】</strong>`;
+                html += '<ul style="margin:6px 0 8px 18px; padding:0;">';
+                for (const r of groups[faction]) {
+                    html += `<li style="margin-bottom:8px;"><span style="color:${r.color}; font-weight:700;">${r.name}</span><br><span style="color:#444;">${r.desc}</span></li>`;
+                }
+                html += '</ul></div>';
+            }
+            container.innerHTML = html;
+        }
+
+        document.getElementById('roleListBtn').addEventListener('click', () => {
+            buildRoleList();
+            document.getElementById('roleListModal').style.display = 'block';
+        });
+        document.getElementById('closeRoleListBtn').addEventListener('click', () => {
+            document.getElementById('roleListModal').style.display = 'none';
+        });
+
+        // ESCキーで閉じる
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const m = document.getElementById('roleListModal');
+                if (m && m.style.display === 'block') m.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
