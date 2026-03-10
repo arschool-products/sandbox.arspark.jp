@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>のばしてGO！</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #87ceeb;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    canvas {
+      display: block;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      /* CSSの表示サイズを固定（内部解像度はJSでDPR倍に設定） */
+      width:  800px;
+      height: 600px;
+    }
+  </style>
+</head>
+<body>
+<canvas id="gameCanvas" width="800" height="600"></canvas>
+<script>
+'use strict';
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  定数
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const W = 800, H = 600;
+const GROUND_Y    = 420;
+const PLAT_HEIGHT = 200;
+const NW = 52, NH = 52;    // 忍者の描画サイズ（画像の1:1比率に合わせて調整）
+const POLE_T = 8;
+
+const GROW_SPD   = 4;
+const FALL_SPD   = 3.5;
+const WALK_SPD   = 3.5;
+const SCROLL_SPD = 5;
+const GRAV       = 0.55;
+
+const NINJA_REST_CX = 150;
+const MIN_GAP = 80,  MAX_GAP = 340;
+const MIN_PW  = 44,  MAX_PW  = 130;
+const FIRST_PW = 160;
+const MAX_POLE = 620;
+
+// パララックス倍率（1.0 = 足場と同速、0に近いほどゆっくり）
+const PAR_CLOUD    = 0.08;   // 雲
+const PAR_FAR_MTN  = 0.18;   // 遠景の山
+const PAR_NEAR_MTN = 0.32;   // 近景の山
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  ゲーム変数
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+let state;
+let platforms;
+let camX;
+let targetCamX;
+let pole;
+let poleBase;
+let ninja;
+let walkTarget;
+let score, best;
+let wFrame;
+
+const ri  = (a, b) => Math.floor(Math.random() * (b - a + 1) + a);
+const w2c = wx   => wx - camX;
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  画像の読み込み
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// 忍者画像: aru01.png（静止・frame0）、aru02.png（歩き・frame1）
+const imgNinja = [new Image(), new Image()];
+imgNinja[0].src = 'aru01.png';
+imgNinja[1].src = 'aru02.png';
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  効果音
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const seNobi    = new Audio('nobi.mp3');    // 棒を伸ばす音（ループ）
+seNobi.loop = true;
+
+const seHashiru = new Audio('hashiru.mp3'); // 走る音（ループ）
+seHashiru.loop = true;
+
+const seTon     = new Audio('ton.mp3');     // 棒が着地する音（単発）
+const seCoin    = new Audio('coin.mp3');    // ゲームオーバー音（単発）
+
+function nobiSoundPlay()  { seNobi.currentTime = 0; seNobi.play().catch(() => {}); }
+function nobiSoundStop()  { seNobi.pause(); seNobi.currentTime = 0; }
+function walkSoundPlay()  { seHashiru.currentTime = 0; seHashiru.play().catch(() => {}); }
+function walkSoundStop()  { seHashiru.pause(); seHashiru.currentTime = 0; }
+function playSE(audio)    { audio.currentTime = 0; audio.play().catch(() => {}); }
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  描画関数
+//  ★画像に差し替える際は各関数の中身を書き換えてください★
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// ── パララックス山ヘルパー ────────────────────────────
+// points: [[x,y], ...] — x は 0〜W の範囲で定義
+// shift:  カメラ移動量に parallaxRate を掛けた値（正方向に流れる）
+function drawMtnLayer(g, color, points, shift) {
+  const off = ((shift % W) + W) % W;   // 0..W-1 に正規化
+  g.fillStyle = color;
+  // -1, 0, +1 の3タイル分描くと隙間が出ない
+  for (let t = -1; t <= 1; t++) {
+    const dx = -off + t * W;
+    if (dx >= W || dx + W <= 0) continue;
+    g.beginPath();
+    g.moveTo(dx, GROUND_Y + 20);
+    for (const [px, py] of points) g.lineTo(dx + px, py);
+    g.lineTo(dx + W, GROUND_Y + 20);
+    g.closePath();
+    g.fill();
+  }
+}
+
+/**
+ * 背景（昼の青空・雲・山並み）を描画
+ * @param {number} bgCamX  現在のカメラX（パララックス計算に使用）
+ * 差し替え例: g.drawImage(bgImage, 0, 0, W, H);
+ */
+function drawBackground(g, bgCamX) {
+  // 青空グラデーション（固定）
+  const sky = g.createLinearGradient(0, 0, 0, H);
+  sky.addColorStop(0,    '#2196f3');
+  sky.addColorStop(0.55, '#64b5f6');
+  sky.addColorStop(1,    '#e3f2fd');
+  g.fillStyle = sky;
+  g.fillRect(0, 0, W, H);
+
+  // 太陽（ごくわずかにパララックス: 0.02）
+  const sunX = 110 - bgCamX * 0.02;
+  g.fillStyle = '#fff9c4';
+  g.beginPath(); g.arc(sunX, 88, 44, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#fff176';
+  g.beginPath(); g.arc(sunX, 88, 34, 0, Math.PI * 2); g.fill();
+
+  // 雲（パララックス PAR_CLOUD）
+  // 雲は "基準X" をワールド座標で定義してラップ
+  const CLOUD_PERIOD = 1400; // この幅で雲が一周する
+  const cloudDefs = [
+    { bx: 200,  cy: 110, sc: 1.00 },
+    { bx: 490,  cy: 88,  sc: 0.80 },
+    { bx: 760,  cy: 132, sc: 0.68 },
+    { bx: 1060, cy: 102, sc: 0.90 },
+    { bx: 1300, cy: 122, sc: 0.72 },
+  ];
+  function drawCloud(cx, cy, sc) {
+    g.fillStyle = 'rgba(255,255,255,0.93)';
+    g.beginPath(); g.ellipse(cx,       cy,      sc*42, sc*20, 0, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.ellipse(cx - 32,  cy + 6,  sc*26, sc*15, 0, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.ellipse(cx + 38,  cy + 6,  sc*30, sc*16, 0, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.ellipse(cx + 6,   cy - 16, sc*24, sc*14, 0, 0, Math.PI * 2); g.fill();
+  }
+  const cloudShift = bgCamX * PAR_CLOUD;
+  for (const cl of cloudDefs) {
+    // ラップしながら描画（CLOUD_PERIOD周期）
+    let cx = ((cl.bx - cloudShift) % CLOUD_PERIOD + CLOUD_PERIOD) % CLOUD_PERIOD;
+    for (const drawX of [cx, cx - CLOUD_PERIOD]) {
+      if (drawX > -180 && drawX < W + 180) drawCloud(drawX, cl.cy, cl.sc);
+    }
+  }
+
+  // 遠景の山（薄緑、パララックス PAR_FAR_MTN）
+  drawMtnLayer(g, '#a5d6a7',
+    [[55,305],[145,252],[248,288],[338,222],[440,272],[535,242],[635,268],[730,235],[800,265]],
+    bgCamX * PAR_FAR_MTN);
+
+  // 近景の山（濃緑、パララックス PAR_NEAR_MTN）
+  drawMtnLayer(g, '#66bb6a',
+    [[0,385],[80,345],[162,362],[248,328],[332,352],[416,335],[512,350],[612,330],[712,348],[800,340]],
+    bgCamX * PAR_NEAR_MTN);
+}
+
+/**
+ * 足場（瓦屋根）を描画 ── シンプルなベタ塗りのみ
+ * @param {number} cx  足場左端のキャンバスX
+ * @param {number} pw  足場の幅
+ * 差し替え例: g.drawImage(roofImage, cx, GROUND_Y, pw, PLAT_HEIGHT);
+ */
+function drawPlatform(g, cx, pw) {
+  // 柱の本体
+  g.fillStyle = '#455a64';
+  g.fillRect(cx, GROUND_Y, pw, PLAT_HEIGHT);
+
+  // 軒先（台形）
+  const oh = 10;
+  g.fillStyle = '#607d8b';
+  g.beginPath();
+  g.moveTo(cx - oh,          GROUND_Y);
+  g.lineTo(cx + pw + oh,     GROUND_Y);
+  g.lineTo(cx + pw + oh - 6, GROUND_Y + 16);
+  g.lineTo(cx - oh + 6,      GROUND_Y + 16);
+  g.closePath();
+  g.fill();
+
+  // 軒先の上縁ハイライト
+  g.fillStyle = '#90a4ae';
+  g.fillRect(cx - oh, GROUND_Y, pw + oh * 2, 3);
+}
+
+/**
+ * 竹の棒（橋）を描画
+ * @param {number} bx   棒の根元キャンバスX
+ * @param {number} by   棒の根元Y（= GROUND_Y）
+ * @param {number} len  棒の長さ
+ * @param {number} ang  角度 0=上向き, 90=右向き
+ * 差し替え例: 回転行列はそのままに g.drawImage(poleImage, ...) へ置き換える
+ */
+function drawPole(g, bx, by, len, ang) {
+  if (len <= 0) return;
+  g.save();
+  g.translate(bx, by);
+  g.rotate((-90 + ang) * Math.PI / 180);
+
+  g.fillStyle = 'rgba(0,0,0,0.22)';
+  g.fillRect(2, -POLE_T / 2 + 2, len, POLE_T);
+
+  const seg = 22;
+  const nseg = Math.ceil(len / seg);
+  for (let i = 0; i < nseg; i++) {
+    const sx = i * seg, sw = Math.min(seg, len - sx);
+    g.fillStyle = i % 2 === 0 ? '#4e8e4e' : '#468448';
+    g.fillRect(sx, -POLE_T / 2, sw, POLE_T);
+  }
+  g.strokeStyle = '#2d5e2d'; g.lineWidth = 2.5;
+  for (let i = 1; i < nseg; i++) {
+    const nx = i * seg; if (nx >= len) break;
+    g.beginPath(); g.moveTo(nx, -POLE_T / 2 - 1); g.lineTo(nx, POLE_T / 2 + 1); g.stroke();
+  }
+  g.fillStyle = 'rgba(200,255,150,0.18)';
+  g.fillRect(0, -POLE_T / 2, len, POLE_T * 0.38);
+  g.restore();
+}
+
+/**
+ * 忍者を描画
+ * @param {number} cx   忍者の右端キャンバスX（棒の根元位置）
+ * @param {number} y    忍者の上端Y
+ * @param {number} fr   歩行フレーム: 0 = aru01.png（静止 or 偶数フレーム）
+ *                                    1 = aru02.png（奇数フレーム）
+ *
+ * 画像が読み込まれていれば自動的に使用し、未読み込みの場合はシェイプで描画します。
+ * 画像のサイズ・位置を調整する場合は NW / NH 定数を変更してください。
+ */
+function drawNinja(g, cx, y, fr) {
+  const nx  = cx - NW;
+  const img = imgNinja[fr];
+
+  // 画像が読み込み済みであれば使用（高品質スケーリング）
+  if (img.complete && img.naturalWidth > 0) {
+    g.imageSmoothingEnabled  = true;
+    g.imageSmoothingQuality  = 'high';
+    g.drawImage(img, nx, y, NW, NH);
+    return;
+  }
+
+  // ── フォールバック: シェイプ描画 ──────────────────
+  g.fillStyle = '#14142e';
+  g.fillRect(nx,     y + 12, NW,     NH - 12);
+  g.fillRect(nx + 2, y,      NW - 4, 14);
+  g.fillStyle = '#cc2222';
+  g.fillRect(nx + 3,  y + 5, 5, 3);
+  g.fillRect(nx + 13, y + 5, 5, 3);
+  g.fillStyle = '#ffcccc';
+  g.fillRect(nx + 4,  y + 5, 3, 2);
+  g.fillRect(nx + 14, y + 5, 3, 2);
+  g.fillStyle = '#990000';
+  g.fillRect(nx, y + 20, NW, 4);
+  const la = fr === 0 ? 0 : 5;
+  g.fillStyle = '#0c0c26';
+  g.fillRect(nx + 2,       y + NH - 13, 8, 13 - la);
+  g.fillRect(nx + NW - 10, y + NH - 13, 8, 10 + (la * 0.5 | 0));
+  g.strokeStyle = '#282848'; g.lineWidth = 1;
+  g.strokeRect(nx + 0.5, y + 0.5, NW - 1, NH - 1);
+}
+
+/**
+ * HUD（スコア・タイトル）を描画
+ */
+function drawHUD(g) {
+  g.fillStyle = 'rgba(0,0,0,0.55)';
+  g.fillRect(0, 0, W, 58);
+
+  g.fillStyle = '#ffd700';
+  g.font = 'bold 28px "MS Gothic","Hiragino Kaku Gothic Pro",monospace';
+  g.textAlign = 'center';
+  g.fillText('のばしてGO！', W / 2, 40);
+
+  g.textAlign = 'left';
+  g.fillStyle = 'rgba(255,255,255,0.55)';
+  g.font = '12px monospace';
+  g.fillText('SCORE', 16, 20);
+  g.fillStyle = '#ffd700';
+  g.font = 'bold 28px monospace';
+  g.fillText(score, 16, 50);
+
+  g.textAlign = 'right';
+  g.fillStyle = 'rgba(180,180,255,0.55)';
+  g.font = '12px monospace';
+  g.fillText('BEST', W - 16, 20);
+  g.fillStyle = '#aaaaff';
+  g.font = 'bold 28px monospace';
+  g.fillText(best, W - 16, 50);
+
+  g.textAlign = 'left';
+}
+
+/**
+ * 操作ガイド（idle時）を描画
+ */
+function drawGuide(g) {
+  g.fillStyle = 'rgba(30,30,30,0.65)';
+  g.font = '15px "MS Gothic","Hiragino Kaku Gothic Pro",monospace';
+  g.textAlign = 'center';
+  g.fillText('クリック長押し / スペース長押しで棒を伸ばそう！', W / 2, H - 24);
+  g.textAlign = 'left';
+}
+
+/**
+ * ゲームオーバー画面を描画
+ */
+function drawGameOver(g) {
+  g.fillStyle = 'rgba(0,0,0,0.72)';
+  g.fillRect(0, 0, W, H);
+
+  const pw = 420, ph = 270;
+  const px = (W - pw) / 2, py = (H - ph) / 2;
+
+  g.fillStyle = '#0b0b20';
+  g.fillRect(px, py, pw, ph);
+  g.strokeStyle = '#cc3333'; g.lineWidth = 3; g.strokeRect(px, py, pw, ph);
+  g.strokeStyle = '#ffd700'; g.lineWidth = 1; g.strokeRect(px + 4, py + 4, pw - 8, ph - 8);
+
+  g.fillStyle = '#cc3333';
+  g.font = 'bold 48px "MS Gothic",monospace';
+  g.textAlign = 'center';
+  g.fillText('GAME OVER', W / 2, py + 68);
+
+  g.fillStyle = '#ffffff';
+  g.font = '22px "MS Gothic",monospace';
+  g.fillText('スコア: ' + score, W / 2, py + 114);
+
+  if (score > 0 && score >= best) {
+    g.fillStyle = '#ffd700';
+    g.font = 'bold 16px "MS Gothic",monospace';
+    g.fillText('★ NEW RECORD! ★', W / 2, py + 144);
+  }
+
+  const bw = 220, bh = 52;
+  const bx = (W - bw) / 2, by = py + ph - 80;
+  g.fillStyle = '#ffd700'; g.fillRect(bx, by, bw, bh);
+  g.fillStyle = '#0b0b20';
+  g.font = 'bold 22px "MS Gothic",monospace';
+  g.fillText('もう一度遊ぶ', W / 2, by + 35);
+
+  g.fillStyle = 'rgba(200,200,255,0.55)';
+  g.font = '13px "MS Gothic",monospace';
+  g.fillText('クリック / スペースキー でリトライ', W / 2, py + ph - 12);
+
+  g.textAlign = 'left';
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  ゲームロジック
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function addPlatform() {
+  const last = platforms[platforms.length - 1];
+  platforms.push({ x: last.x + last.w + ri(MIN_GAP, MAX_GAP), w: ri(MIN_PW, MAX_PW) });
+}
+
+function initGame() {
+  nobiSoundStop();
+  walkSoundStop();
+  state      = 'idle';
+  score      = 0;
+  camX       = 0;
+  targetCamX = 0;
+  pole       = { len: 0, angle: 0 };
+  poleBase   = 0;
+  walkTarget = 0;
+  wFrame     = 0;
+  platforms  = [{ x: 0, w: FIRST_PW }];
+  addPlatform();
+  ninja = { wx: FIRST_PW, y: GROUND_Y - NH, vy: 0 };
+}
+
+function hitTest() {
+  const tip = poleBase + pole.len;
+  const np  = platforms[1];
+  return tip >= np.x && tip <= np.x + np.w;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  各ステートの更新処理
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function updGrowing() {
+  pole.len = Math.min(pole.len + GROW_SPD, MAX_POLE);
+}
+
+function updFalling() {
+  pole.angle = Math.min(pole.angle + FALL_SPD, 90);
+  if (pole.angle >= 90) {
+    playSE(seTon);
+    if (hitTest()) {
+      state      = 'walk_ok';
+      walkTarget = platforms[1].x + platforms[1].w;
+    } else {
+      state      = 'walk_fail';
+      walkTarget = poleBase + pole.len;
+    }
+    walkSoundPlay();
+  }
+}
+
+function updWalkOk() {
+  wFrame   = (Date.now() / 130 | 0) % 2;
+  ninja.wx = Math.min(ninja.wx + WALK_SPD, walkTarget);
+  if (ninja.wx >= walkTarget) {
+    walkSoundStop();
+    score++;
+    if (score > best) best = score;
+    platforms.shift();
+    addPlatform();
+    targetCamX = ninja.wx - NINJA_REST_CX;
+    pole.len   = 0;
+    pole.angle = 0;
+    state      = 'scrolling';
+  }
+}
+
+function updWalkFail() {
+  wFrame   = (Date.now() / 130 | 0) % 2;
+  ninja.wx = Math.min(ninja.wx + WALK_SPD, walkTarget);
+  if (ninja.wx >= walkTarget) {
+    walkSoundStop();
+    ninja.vy = 0;
+    state    = 'drop';
+  }
+}
+
+function updScrolling() {
+  const d = targetCamX - camX;
+  if (Math.abs(d) <= SCROLL_SPD) {
+    camX   = targetCamX;
+    wFrame = 0;
+    state  = 'idle';
+  } else {
+    camX += SCROLL_SPD;
+  }
+}
+
+function updDrop() {
+  ninja.vy += GRAV;
+  ninja.y  += ninja.vy;
+  ninja.wx += WALK_SPD * 0.35;
+  if (ninja.y > H + 80) {
+    pole.len = 0;
+    state    = 'over';
+    playSE(seCoin);  // ゲームオーバー確定の瞬間に1回だけ再生
+  }
+}
+
+function update() {
+  if (state === 'growing')   updGrowing();
+  if (state === 'falling')   updFalling();
+  if (state === 'walk_ok')   updWalkOk();
+  if (state === 'walk_fail') updWalkFail();
+  if (state === 'scrolling') updScrolling();
+  if (state === 'drop')      updDrop();
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  レンダリング
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function render(g) {
+  g.clearRect(0, 0, W, H);
+
+  // 背景にカメラXを渡してパララックス描画
+  drawBackground(g, camX);
+
+  for (const p of platforms) {
+    const cx = w2c(p.x);
+    if (cx + p.w > -30 && cx < W + 30) drawPlatform(g, cx, p.w);
+  }
+
+  if (pole.len > 0) drawPole(g, w2c(poleBase), GROUND_Y, pole.len, pole.angle);
+
+  if (state !== 'over') drawNinja(g, w2c(ninja.wx), ninja.y, wFrame);
+
+  drawHUD(g);
+  if (state === 'idle') drawGuide(g);
+  if (state === 'over') drawGameOver(g);
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  入力処理
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function onInputStart() {
+  if (state === 'idle') {
+    state      = 'growing';
+    pole.len   = 0;
+    pole.angle = 0;
+    poleBase   = ninja.wx;
+    nobiSoundPlay();   // 棒を伸ばし始めたら nobi.mp3 ループ開始
+  } else if (state === 'over') {
+    initGame();
+  }
+}
+
+function onInputEnd() {
+  if (state === 'growing') {
+    nobiSoundStop();   // 離した瞬間に nobi.mp3 を停止
+    state = 'falling';
+  }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  メインループ・初期化
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+window.addEventListener('load', () => {
+  const cv = document.getElementById('gameCanvas');
+  const g  = cv.getContext('2d');
+
+  // ── 高DPI（Retina）対応 ──────────────────────────────
+  // Canvas内部の物理ピクセル数をdevicePixelRatio倍にし、
+  // コンテキストを同倍率でスケールすることで論理座標系（800×600）は変えずに
+  // Retinaで鮮明に描画できる。
+  const dpr = window.devicePixelRatio || 1;
+  cv.width  = W * dpr;
+  cv.height = H * dpr;
+  g.scale(dpr, dpr);
+
+  // imageSmoothingを一度ここで設定（save/restoreで復元されるため各描画前にも設定）
+  g.imageSmoothingEnabled = true;
+  g.imageSmoothingQuality = 'high';
+
+  cv.addEventListener('mousedown',  e => { if (e.button === 0) onInputStart(); });
+  cv.addEventListener('mouseup',    e => { if (e.button === 0) onInputEnd(); });
+  cv.addEventListener('mouseleave', () => onInputEnd());
+
+  document.addEventListener('keydown', e => {
+    if (e.code === 'Space') { e.preventDefault(); if (!e.repeat) onInputStart(); }
+  });
+  document.addEventListener('keyup', e => {
+    if (e.code === 'Space') onInputEnd();
+  });
+
+  best = 0;
+  initGame();
+
+  (function loop() {
+    update();
+    render(g);
+    requestAnimationFrame(loop);
+  })();
+});
+</script>
+</body>
+</html>
