@@ -1,0 +1,29 @@
+# 外部ゲームのステージング（git管理外）
+imports/
+
+# ビルド成果物
+dist/
+games/*/src/dist/
+.vite/
+
+# npmパッケージ
+node_modules/
+games/*/src/node_modules/
+
+# 環境変数
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# エディタ
+.vscode/settings.json
+*.swp
+*.swo
+
+# ログ
+*.log
+npm-debug.log*
