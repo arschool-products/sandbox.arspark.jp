@@ -484,6 +484,28 @@ function update() {
 //  レンダリング
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  レンダリング
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// 屋根（足場）上にいるときは主人公を少し下げるオフセット
+const ROOF_Y_OFFSET = 4;
+
+function calcNinjaDrawY() {
+  // 落下中やゲームオーバー時は通常の y を使う
+  if (state === 'drop' || state === 'over') return ninja.y;
+
+  // 足場の上にいるかどうか判定（wx は忍者の右端ワールド座標）
+  for (const p of platforms) {
+    if (ninja.wx >= p.x && ninja.wx <= p.x + p.w) {
+      // 足場の屋根の上にいるとみなす
+      return GROUND_Y - NH + ROOF_Y_OFFSET;
+    }
+  }
+
+  return ninja.y;
+}
+
 function render(g) {
   g.clearRect(0, 0, W, H);
 
@@ -497,7 +519,10 @@ function render(g) {
 
   if (pole.len > 0) drawPole(g, w2c(poleBase), GROUND_Y, pole.len, pole.angle);
 
-  if (state !== 'over') drawNinja(g, w2c(ninja.wx), ninja.y, wFrame);
+  if (state !== 'over') {
+    const drawY = calcNinjaDrawY();
+    drawNinja(g, w2c(ninja.wx), drawY, wFrame);
+  }
 
   drawHUD(g);
   if (state === 'idle') drawGuide(g);
