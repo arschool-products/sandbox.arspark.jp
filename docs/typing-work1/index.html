@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TYPINGMASTER</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- 開始画面 -->
+  <div id="screen-start" class="screen active">
+    <h1 class="title">TYPINGMASTER</h1>
+    <p class="subtitle">ローマ字タイピング練習</p>
+    <button id="btn-start" class="btn-primary">START</button>
+  </div>
+
+  <!-- ゲーム画面 -->
+  <div id="screen-game" class="screen">
+    <div class="hud">
+      <div class="score-display">
+        <span class="hud-label">SCORE</span>
+        <span id="score">0</span>
+      </div>
+      <div class="progress-wrap">
+        <div id="progress-bar" class="progress-bar">
+          <div id="progress-fill" class="progress-fill"></div>
+        </div>
+      </div>
+      <div class="time-display">
+        <span class="hud-label">TIME</span>
+        <span id="time-left">60</span>
+      </div>
+    </div>
+
+    <div class="question-area">
+      <div id="kana-display" class="kana-display"></div>
+      <div id="roman-display" class="roman-display"></div>
+    </div>
+
+    <div id="ok-feedback" class="ok-feedback">OK</div>
+  </div>
+
+  <!-- 結果画面 -->
+  <div id="screen-result" class="screen">
+    <h2 class="result-title">RESULT</h2>
+    <p id="result-score" class="result-score">0問正解</p>
+    <button id="btn-retry" class="btn-primary">RETRY</button>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
