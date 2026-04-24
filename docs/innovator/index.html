@@ -1,0 +1,1451 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>センセイモン図鑑 〜野生の先生が現れた！〜</title>
+  <style>
+    :root {
+      --bg: #1a1a2e;
+      --surface: #16213e;
+      --card-bg: #0f3460;
+      --accent: #e94560;
+      --gold: #ffd700;
+      --text: #eaeaea;
+      --muted: #8892a4;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'Hiragino Kaku Gothic Pro', sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ===== HEADER ===== */
+    header {
+      background: linear-gradient(135deg, #e94560, #0f3460);
+      padding: 16px 20px;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+    header h1 {
+      font-size: 1.6rem;
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-shadow: 2px 2px 8px rgba(0,0,0,0.6);
+    }
+    header p { font-size: 0.75rem; color: #ffd700; margin-top: 2px; }
+    .reset-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      padding: 6px 12px;
+      background: rgba(0,0,0,0.4);
+      color: #ffd700;
+      border: 1px solid rgba(255,215,0,0.4);
+      border-radius: 14px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .reset-btn:hover { background: rgba(233,69,96,0.3); border-color: var(--accent); color: white; }
+
+    /* ===== NAV ===== */
+    nav {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px;
+      background: var(--surface);
+      border-bottom: 1px solid #2a2a4a;
+    }
+    .nav-btn {
+      padding: 8px 20px;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 700;
+      transition: all 0.2s;
+      background: #2a2a4a;
+      color: var(--muted);
+    }
+    .nav-btn.active {
+      background: var(--accent);
+      color: white;
+      box-shadow: 0 0 12px rgba(233,69,96,0.5);
+    }
+
+    /* ===== SCREENS ===== */
+    .screen { display: none; padding: 16px; max-width: 900px; margin: 0 auto; }
+    .screen.active { display: block; }
+
+    /* ===== SEARCH BAR ===== */
+    .search-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .search-bar input, .search-bar select {
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid #2a2a4a;
+      background: var(--surface);
+      color: var(--text);
+      font-size: 0.9rem;
+    }
+    .search-bar input { flex: 1; }
+
+    /* ===== CARD GRID ===== */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+    }
+
+    /* ===== TEACHER CARD ===== */
+    .teacher-card {
+      background: linear-gradient(160deg, var(--card-bg), #1a1a3e);
+      border-radius: 16px;
+      padding: 0;
+      overflow: hidden;
+      border: 2px solid transparent;
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+      position: relative;
+    }
+    .teacher-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 32px rgba(233,69,96,0.3);
+    }
+    .teacher-card.rarity-5 { border-color: #ff6b35; box-shadow: 0 0 16px rgba(255,107,53,0.4); }
+    .teacher-card.rarity-4 { border-color: #9b59b6; }
+    .teacher-card.rarity-3 { border-color: #3498db; }
+    .teacher-card.rarity-2 { border-color: #2ecc71; }
+    .teacher-card.rarity-1 { border-color: #7f8c8d; }
+
+    .card-header {
+      padding: 14px 16px 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .teacher-avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .card-title { flex: 1; min-width: 0; }
+    .card-title h3 {
+      font-size: 1rem;
+      font-weight: 900;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .card-title .nickname {
+      font-size: 0.75rem;
+      color: #ffd700;
+      font-style: italic;
+    }
+
+    .rarity-stars {
+      font-size: 0.85rem;
+      letter-spacing: 1px;
+    }
+    .star-filled { color: #ffd700; }
+    .star-empty { color: #444; }
+
+    .type-badges {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+    .type-badge {
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+
+    .card-body { padding: 0 16px 12px; }
+    .catchphrase {
+      background: rgba(255,255,255,0.05);
+      border-left: 3px solid var(--accent);
+      padding: 8px 10px;
+      border-radius: 0 8px 8px 0;
+      font-size: 0.82rem;
+      font-style: italic;
+      margin-bottom: 10px;
+      color: #c8d6e5;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .stat-item { font-size: 0.75rem; }
+    .stat-label { color: var(--muted); }
+    .stat-value { font-weight: 700; color: var(--text); }
+
+    .hp-bar-container {
+      margin-bottom: 10px;
+    }
+    .hp-bar-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-bottom: 3px;
+    }
+    .hp-bar {
+      height: 6px;
+      background: #2a2a4a;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .hp-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.5s;
+    }
+    .hp-fill.danger { background: linear-gradient(90deg, #e74c3c, #ff6b35); }
+    .hp-fill.normal { background: linear-gradient(90deg, #2ecc71, #3498db); }
+    .hp-fill.safe { background: linear-gradient(90deg, #2ecc71, #27ae60); }
+
+    .strategy-preview {
+      background: rgba(255,215,0,0.08);
+      border: 1px solid rgba(255,215,0,0.2);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 0.75rem;
+      color: #ffd700;
+    }
+    .strategy-preview strong { display: block; margin-bottom: 2px; }
+
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 16px 12px;
+    }
+    .encounter-count { font-size: 0.72rem; color: var(--muted); }
+    .detail-btn {
+      padding: 5px 14px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .detail-btn:hover { background: #c0392b; }
+
+    /* ===== MODAL ===== */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      z-index: 1000;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 560px;
+      border: 1px solid #2a2a4a;
+      margin: auto;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 24px 12px;
+      border-bottom: 1px solid #2a2a4a;
+    }
+    .modal-header h2 { font-size: 1.2rem; }
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 1.5rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .modal-body { padding: 20px 24px; }
+
+    .detail-avatar {
+      text-align: center;
+      font-size: 4rem;
+      margin-bottom: 12px;
+    }
+    .detail-section { margin-bottom: 16px; }
+    .detail-section h4 {
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+      border-bottom: 1px solid #2a2a4a;
+      padding-bottom: 4px;
+    }
+    .detail-section p { font-size: 0.9rem; line-height: 1.6; }
+
+    .strategy-list { list-style: none; }
+    .strategy-list li {
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 8px;
+      margin-bottom: 6px;
+      font-size: 0.85rem;
+      display: flex;
+      gap: 8px;
+    }
+    .strategy-list li::before { content: '⚔️'; flex-shrink: 0; }
+
+    .add-strategy {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .add-strategy input {
+      flex: 1;
+      padding: 8px 12px;
+      background: var(--bg);
+      border: 1px solid #2a2a4a;
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.85rem;
+    }
+    .add-strategy button {
+      padding: 8px 14px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    /* ===== REGISTER FORM ===== */
+    .form-section {
+      background: var(--surface);
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 560px;
+      margin: 0 auto;
+    }
+    .form-section h2 {
+      font-size: 1.2rem;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .form-group { margin-bottom: 16px; }
+    .form-group label {
+      display: block;
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-bottom: 5px;
+      font-weight: 600;
+    }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--bg);
+      border: 1px solid #2a2a4a;
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 0.9rem;
+      font-family: inherit;
+    }
+    .form-group textarea { resize: vertical; min-height: 80px; }
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .type-selector {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .type-option {
+      padding: 6px 14px;
+      border-radius: 14px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.15s;
+      opacity: 0.5;
+    }
+    .type-option.selected { opacity: 1; border-color: white; }
+
+    .avatar-selector {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .avatar-option {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      cursor: pointer;
+      background: var(--bg);
+      border: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .avatar-option.selected {
+      border-color: var(--accent);
+      background: rgba(233,69,96,0.15);
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--accent), #9b59b6);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 900;
+      cursor: pointer;
+      letter-spacing: 2px;
+      transition: opacity 0.2s;
+      margin-top: 8px;
+    }
+    .submit-btn:hover { opacity: 0.9; }
+
+    /* ===== RANKING ===== */
+    .ranking-list { display: flex; flex-direction: column; gap: 10px; }
+    .ranking-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 12px 16px;
+    }
+    .rank-num {
+      font-size: 1.4rem;
+      font-weight: 900;
+      width: 36px;
+      text-align: center;
+    }
+    .rank-1 { color: #ffd700; }
+    .rank-2 { color: #c0c0c0; }
+    .rank-3 { color: #cd7f32; }
+    .rank-other { color: var(--muted); }
+    .ranking-info { flex: 1; }
+    .ranking-info h3 { font-size: 0.95rem; }
+    .ranking-info p { font-size: 0.75rem; color: var(--muted); }
+    .ranking-score {
+      font-size: 1.1rem;
+      font-weight: 900;
+      color: var(--accent);
+    }
+
+    /* ===== EMPTY STATE ===== */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+    }
+    .empty-state .emoji { font-size: 3rem; margin-bottom: 12px; }
+    .empty-state p { font-size: 0.9rem; }
+
+    /* ===== TOAST ===== */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: #27ae60;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      z-index: 9999;
+      transition: transform 0.3s;
+      pointer-events: none;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ===== TYPE COLORS ===== */
+    .type-火  { background: #e74c3c; color: white; }
+    .type-水  { background: #3498db; color: white; }
+    .type-毒  { background: #9b59b6; color: white; }
+    .type-眠  { background: #7f8c8d; color: white; }
+    .type-電  { background: #f39c12; color: #1a1a2e; }
+    .type-氷  { background: #48c9b0; color: #1a1a2e; }
+    .type-闇  { background: #2c3e50; color: white; border: 1px solid #4a4a6a; }
+    .type-謎  { background: #e056fd; color: white; }
+    .type-鬼  { background: #e67e22; color: white; }
+    .type-神  { background: linear-gradient(135deg, #f6d365, #fda085); color: #1a1a2e; }
+
+    /* ===== MAP SCREEN ===== */
+    .map-container { max-width: 600px; margin: 0 auto; }
+
+    .map-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 4px;
+      margin-bottom: 12px;
+    }
+
+    .map-cell {
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      padding: 6px 4px;
+      min-height: 72px;
+      border: 2px solid transparent;
+    }
+    .map-cell:not(.hallway-cell):hover { filter: brightness(1.3); transform: scale(1.04); }
+    .map-cell.player-here { border-color: var(--accent); box-shadow: 0 0 14px rgba(233,69,96,0.7); }
+    .map-cell.hallway-cell { cursor: default; opacity: 0.45; }
+
+    .map-cell-icon { font-size: 1.4rem; line-height: 1; }
+    .map-cell-name { font-size: 0.55rem; color: var(--muted); margin-top: 2px; text-align: center; white-space: nowrap; }
+    .player-icon { position: absolute; top: 3px; right: 3px; font-size: 0.9rem; animation: mapPulse 1s ease-in-out infinite; }
+    @keyframes mapPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.3)} }
+
+    .map-teacher-icons { display: flex; flex-wrap: wrap; gap: 1px; justify-content: center; margin-top: 2px; }
+    .map-teacher-dot { font-size: 0.9rem; filter: drop-shadow(0 0 3px rgba(255,215,0,0.9)); animation: tdFloat 2s ease-in-out infinite; cursor: pointer; }
+    .map-teacher-dot.captured { filter: grayscale(0.8) opacity(0.45); animation: none; }
+    @keyframes tdFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
+
+    .battle-prompt {
+      background: linear-gradient(135deg, rgba(233,69,96,0.2), rgba(155,89,182,0.2));
+      border: 1px solid var(--accent);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    .battle-prompt h3 { font-size: 0.95rem; margin-bottom: 10px; }
+    .battle-prompt-teachers { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+    .battle-prompt-teacher {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 10px;
+      padding: 8px 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+      transition: background 0.2s;
+    }
+    .battle-prompt-teacher:hover { background: rgba(233,69,96,0.3); border-color: var(--accent); }
+
+    .map-status-msg { text-align: center; padding: 10px; font-size: 0.82rem; color: var(--muted); margin-bottom: 12px; }
+    .map-status-msg.success { color: #2ecc71; }
+
+    .map-legend { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; padding: 8px 0; }
+    .legend-item { display: flex; align-items: center; gap: 4px; font-size: 0.72rem; color: var(--muted); }
+
+    /* ===== BATTLE OVERLAY ===== */
+    .battle-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(180deg, #06060f 0%, #12002a 100%);
+      z-index: 2000;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+      overflow-y: auto;
+    }
+    .battle-overlay.open { display: flex; }
+
+    .battle-teacher-display { text-align: center; margin-bottom: 20px; }
+    .battle-teacher-avatar {
+      font-size: 5rem;
+      display: block;
+      animation: battleBob 3s ease-in-out infinite;
+      margin-bottom: 8px;
+    }
+    @keyframes battleBob {
+      0%,100%{transform:translateY(0) rotate(-3deg)}
+      50%{transform:translateY(-12px) rotate(3deg)}
+    }
+    .battle-teacher-name { font-size: 1.2rem; font-weight: 900; margin-bottom: 4px; }
+    .battle-teacher-subinfo { font-size: 0.78rem; color: var(--muted); margin-bottom: 8px; }
+
+    .battle-instruction {
+      font-size: 1rem; color: #ffd700; font-weight: 700;
+      text-align: center; margin-bottom: 20px; min-height: 1.4em;
+      animation: instBlink 1.8s ease-in-out infinite;
+    }
+    @keyframes instBlink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    .bags-container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      width: 100%;
+      max-width: 340px;
+      margin-bottom: 20px;
+    }
+
+    .bag {
+      aspect-ratio: 1;
+      background: linear-gradient(160deg, #2a1a4e, #1a1440);
+      border: 2px solid #5a3a8a;
+      border-radius: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 2.4rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .bag:hover:not(.opened) {
+      transform: translateY(-5px) scale(1.05);
+      border-color: #ffd700;
+      box-shadow: 0 8px 24px rgba(255,215,0,0.35);
+    }
+    .bag.opened { cursor: default; animation: bagReveal 0.45s ease forwards; }
+    @keyframes bagReveal {
+      0%{transform:scale(1)} 30%{transform:scale(1.25) rotate(6deg)}
+      65%{transform:scale(0.93) rotate(-3deg)} 100%{transform:scale(1) rotate(0)}
+    }
+    .bag.result-daikiatari { background:linear-gradient(160deg,#4a2800,#6a3c00); border-color:#ffd700; box-shadow:0 0 28px rgba(255,215,0,0.65); }
+    .bag.result-atari      { background:linear-gradient(160deg,#0a3a20,#0a4a2a); border-color:#2ecc71; box-shadow:0 0 16px rgba(46,204,113,0.45); }
+    .bag.result-hazure     { background:linear-gradient(160deg,#222,#111); border-color:#444; }
+
+    .bag-result-text { font-size: 0.65rem; font-weight: 700; margin-top: 3px; }
+
+    .battle-result-banner {
+      width: 100%; max-width: 340px;
+      border-radius: 14px; padding: 18px;
+      text-align: center; margin-bottom: 14px;
+      display: none;
+      animation: bannerIn 0.4s ease;
+    }
+    @keyframes bannerIn { from{transform:scale(0.8);opacity:0} to{transform:scale(1);opacity:1} }
+    .battle-result-banner.daikiatari { background:linear-gradient(135deg,#b8860b,#ffd700); color:#1a1a2e; display:block; }
+    .battle-result-banner.atari      { background:linear-gradient(135deg,#27ae60,#2ecc71); color:white;   display:block; }
+    .battle-result-banner.hazure     { background:linear-gradient(135deg,#555,#333);       color:#aaa;    display:block; }
+    .battle-result-banner h2 { font-size: 1.4rem; margin-bottom: 6px; }
+    .battle-result-banner p  { font-size: 0.85rem; line-height: 1.5; }
+
+    .battle-close-btn {
+      padding: 12px 36px; border: none; border-radius: 20px;
+      font-size: 0.95rem; font-weight: 700; cursor: pointer;
+      background: var(--accent); color: white;
+      display: none; margin-top: 4px;
+      transition: opacity 0.2s;
+    }
+    .battle-close-btn:hover { opacity: 0.85; }
+
+    /* ===== CAPTURED BADGE ===== */
+    .captured-badge {
+      position: absolute; top: 8px; right: 8px;
+      background: #27ae60; color: white;
+      font-size: 0.62rem; font-weight: 700;
+      padding: 2px 7px; border-radius: 8px;
+      white-space: nowrap;
+    }
+    .captured-badge.rare { background: linear-gradient(135deg,#b8860b,#ffd700); color: #1a1a2e; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>📖 先生保管計画</h1>
+  <p>〜 野生の先生が現れた！全員ゲットだぜ！ 〜</p>
+  <button class="reset-btn" onclick="resetData()">🗑️ リセット</button>
+</header>
+
+<nav>
+  <button class="nav-btn active" onclick="showScreen('zukan')">📖 図鑑</button>
+  <button class="nav-btn" onclick="showScreen('register')">➕ 登録</button>
+  <button class="nav-btn" onclick="showScreen('ranking')">🏆 ランキング</button>
+  <button class="nav-btn" onclick="showScreen('map')">🗺️ マップ</button>
+</nav>
+
+<div id="screen-zukan" class="screen active">
+  <div class="search-bar">
+    <input type="text" id="search-input" placeholder="🔍 先生名・口癖で検索..." oninput="renderCards()">
+    <select id="filter-type" onchange="renderCards()">
+      <option value="">全属性</option>
+      <option value="火">🔥 火</option>
+      <option value="水">💧 水</option>
+      <option value="毒">☠️ 毒</option>
+      <option value="眠">💤 眠</option>
+      <option value="電">⚡ 電</option>
+      <option value="氷">❄️ 氷</option>
+      <option value="闇">🌑 闇</option>
+      <option value="謎">🔮 謎</option>
+      <option value="鬼">👹 鬼</option>
+      <option value="神">✨ 神</option>
+    </select>
+  </div>
+  <div class="card-grid" id="card-grid"></div>
+</div>
+
+<div id="screen-register" class="screen">
+  <div class="form-section">
+    <h2>🆕 新しい先生を登録する</h2>
+
+    <div class="form-group">
+      <label>先生の名前（あだ名でもOK）</label>
+      <input type="text" id="f-name" placeholder="例：山田先生、ヤマダ">
+    </div>
+
+    <div class="form-group">
+      <label>図鑑でのニックネーム</label>
+      <input type="text" id="f-nickname" placeholder="例：授業放棄マスター、居眠りキング">
+    </div>
+
+    <div class="form-group">
+      <label>担当教科</label>
+      <input type="text" id="f-subject" placeholder="例：数学、体育、英語">
+    </div>
+
+    <div class="form-group">
+      <label>出没エリア</label>
+      <select id="f-area">
+        <option value="classroom1">📚 1年教室</option>
+        <option value="classroom2">📚 2年教室</option>
+        <option value="classroom3">📚 3年教室</option>
+        <option value="staffroom">🏢 職員室</option>
+        <option value="gym">🏃 体育館</option>
+        <option value="library">📖 図書室</option>
+        <option value="scienceroom">🔬 理科室</option>
+        <option value="musicroom">🎵 音楽室</option>
+        <option value="rooftop">🌤 屋上</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>アバター</label>
+      <div class="avatar-selector" id="avatar-selector">
+        <div class="avatar-option selected" data-emoji="👨‍🏫" onclick="selectAvatar(this)">👨‍🏫</div>
+        <div class="avatar-option" data-emoji="👩‍🏫" onclick="selectAvatar(this)">👩‍🏫</div>
+        <div class="avatar-option" data-emoji="🧔" onclick="selectAvatar(this)">🧔</div>
+        <div class="avatar-option" data-emoji="👴" onclick="selectAvatar(this)">👴</div>
+        <div class="avatar-option" data-emoji="👵" onclick="selectAvatar(this)">👵</div>
+        <div class="avatar-option" data-emoji="🤓" onclick="selectAvatar(this)">🤓</div>
+        <div class="avatar-option" data-emoji="😤" onclick="selectAvatar(this)">😤</div>
+        <div class="avatar-option" data-emoji="😴" onclick="selectAvatar(this)">😴</div>
+        <div class="avatar-option" data-emoji="🤬" onclick="selectAvatar(this)">🤬</div>
+        <div class="avatar-option" data-emoji="🧙" onclick="selectAvatar(this)">🧙</div>
+        <div class="avatar-option" data-emoji="🦖" onclick="selectAvatar(this)">🦖</div>
+        <div class="avatar-option" data-emoji="🤖" onclick="selectAvatar(this)">🤖</div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>属性（複数選択OK）</label>
+      <div class="type-selector" id="type-selector">
+        <div class="type-option type-火 selected" data-type="火" onclick="toggleType(this)">🔥 火</div>
+        <div class="type-option type-水" data-type="水" onclick="toggleType(this)">💧 水</div>
+        <div class="type-option type-毒" data-type="毒" onclick="toggleType(this)">☠️ 毒</div>
+        <div class="type-option type-眠" data-type="眠" onclick="toggleType(this)">💤 眠</div>
+        <div class="type-option type-電" data-type="電" onclick="toggleType(this)">⚡ 電</div>
+        <div class="type-option type-氷" data-type="氷" onclick="toggleType(this)">❄️ 氷</div>
+        <div class="type-option type-闇" data-type="闇" onclick="toggleType(this)">🌑 闇</div>
+        <div class="type-option type-謎" data-type="謎" onclick="toggleType(this)">🔮 謎</div>
+        <div class="type-option type-鬼" data-type="鬼" onclick="toggleType(this)">👹 鬼</div>
+        <div class="type-option type-神" data-type="神" onclick="toggleType(this)">✨ 神</div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>レア度 ★</label>
+        <select id="f-rarity">
+          <option value="5">★★★★★ 伝説</option>
+          <option value="4">★★★★☆ 超レア</option>
+          <option value="3" selected>★★★☆☆ レア</option>
+          <option value="2">★★☆☆☆ アンコモン</option>
+          <option value="1">★☆☆☆☆ コモン</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>危険度 (0〜100)</label>
+        <input type="number" id="f-danger" min="0" max="100" value="50" placeholder="50">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>口癖</label>
+      <input type="text" id="f-catchphrase" placeholder="例：「いいか、ここ大事だぞ」「テスト出るからな」">
+    </div>
+
+    <div class="form-group">
+      <label>特徴・生態</label>
+      <textarea id="f-description" placeholder="例：授業中に急に関係ない話をし始める。チョークの投げ方が神がかり的に正確。眠そうにしてると必ず当てられる。"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label>初期攻略法（オプション）</label>
+      <input type="text" id="f-strategy" placeholder="例：前から2列目に座ると安全地帯になる">
+    </div>
+
+    <button class="submit-btn" onclick="registerTeacher()">⚡ 図鑑に登録する！</button>
+  </div>
+</div>
+
+<div id="screen-ranking" class="screen">
+  <h2 style="margin-bottom:16px;font-size:1.1rem;">🏆 危険度ランキング</h2>
+  <div class="ranking-list" id="ranking-list"></div>
+</div>
+
+<div id="screen-map" class="screen">
+  <div class="map-container">
+    <div id="map-battle-prompt"></div>
+    <div class="map-grid" id="map-grid"></div>
+    <div class="map-legend">
+      <div class="legend-item">🔴 あなたの位置</div>
+      <div class="legend-item">👨‍🏫 未捕獲の先生</div>
+      <div class="legend-item"><span style="opacity:0.4">👤</span> 捕獲済み</div>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal-content">
+    <div class="modal-header">
+      <h2 id="modal-title">先生詳細</h2>
+      <button class="modal-close" onclick="closeModalBtn()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<!-- BATTLE OVERLAY -->
+<div class="battle-overlay" id="battle-overlay">
+  <div class="battle-teacher-display">
+    <span class="battle-teacher-avatar" id="battle-avatar"></span>
+    <div class="battle-teacher-name" id="battle-name"></div>
+    <div class="battle-teacher-subinfo" id="battle-info"></div>
+    <div class="type-badges" style="justify-content:center" id="battle-types"></div>
+  </div>
+  <div class="battle-instruction" id="battle-instruction">袋を1つ選んでください！</div>
+  <div class="bags-container" id="bags-container"></div>
+  <div class="battle-result-banner" id="battle-result-banner">
+    <h2 id="battle-result-title"></h2>
+    <p id="battle-result-desc"></p>
+  </div>
+  <button class="battle-close-btn" id="battle-close-btn" onclick="closeBattle()"></button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== DATA =====
+const TYPE_EMOJI = { 火:'🔥', 水:'💧', 毒:'☠️', 眠:'💤', 電:'⚡', 氷:'❄️', 闇:'🌑', 謎:'🔮', 鬼:'👹', 神:'✨' };
+const TYPE_COLOR = {
+  火:'#e74c3c', 水:'#3498db', 毒:'#9b59b6', 眠:'#7f8c8d',
+  電:'#f39c12', 氷:'#48c9b0', 闇:'#2c3e50', 謎:'#e056fd', 鬼:'#e67e22', 神:'#f6d365'
+};
+const AVATAR_BG = {
+  '👨‍🏫':'#1a6b5c','👩‍🏫':'#7d3c98','🧔':'#1e3a5f','👴':'#5d4037',
+  '👵':'#6a1b9a','🤓':'#1565c0','😤':'#b71c1c','😴':'#37474f',
+  '🤬':'#8b0000','🧙':'#4a148c','🦖':'#1b5e20','🤖':'#263238'
+};
+
+const SAMPLE_TEACHERS = [
+  {
+    id: 1, name: '村野先生', nickname: '授業放棄マスター', subject: '社会',
+    avatar: '😴', types: ['眠','毒'], rarity: 4, danger: 35, mapArea: 'classroom2', captured: false, capturedRarity: null,
+    catchphrase: '「やれば分かるよ、やってみな」',
+    description: '週の半分以上が自習。授業開始3分で教科書を投げて「わかった人は問題解いといて」と言う。実は授業しなさすぎて自分でも内容を忘れている説がある。板書は象形文字レベル。',
+    strategies: ['開始直後に「先生、先週の続きは？」と聞くと混乱して自習になる', '窓際の席に座ると存在を忘れられてほぼ自由時間', '黒板消しを先に消しておくと「誰か消してきて」で時間稼ぎができる'],
+    encounters: 847
+  },
+  {
+    id: 2, name: '鈴木先生', nickname: '口癖連発ドラゴン', subject: '数学',
+    avatar: '🤓', types: ['火','電'], rarity: 5, danger: 72, mapArea: 'classroom1', captured: false, capturedRarity: null,
+    catchphrase: '「いいか？わかった？いいか？」',
+    description: '「いいか」を一授業で最大47回使用した記録を持つ（生徒調べ）。何も理解していなくても「わかった？」という質問には「はい」と即答しないと永遠に「いいか？」が続く。テスト前日に「ここ出るから」と言うが、毎回全部出ない。',
+    strategies: ['「わかりました！」と元気よく言うと満足して次に進む', '「先生、もう一度お願いします」は禁句（永遠に繰り返される）', '眠い時は「いいか」のカウントをするゲームに変換すると乗り切れる'],
+    encounters: 1203
+  },
+  {
+    id: 3, name: '佐藤先生', nickname: '昔話タイムスリッパー', subject: '体育',
+    avatar: '🧔', types: ['鬼','謎'], rarity: 3, danger: 61, mapArea: 'gym', captured: false, capturedRarity: null,
+    catchphrase: '「俺が若い頃はな...」「お前らは軟弱だ」',
+    description: '15分の授業に45分の武勇伝が付属してくる。若い頃は全国大会出場したらしいが本当かは誰も確認できていない。準備体操が独自進化しており、某有名体操と全く異なる。生徒がミスすると「俺はこんなミスしなかった」が発動する。',
+    strategies: ['「先生すごいですね！」と言うと武勇伝モードに入り実技をサボれる', '意図的に軽いミスをすると過去話が始まり残り時間で逃げ切れる', '「先生の若い頃の話、もっと聞きたいです」は最終手段（授業がなくなる）'],
+    encounters: 620
+  },
+  {
+    id: 4, name: '高橋先生', nickname: '理不尽クイーン', subject: '英語',
+    avatar: '😤', types: ['火','鬼'], rarity: 4, danger: 89, mapArea: 'classroom3', captured: false, capturedRarity: null,
+    catchphrase: '「なんで？」「理由は？」「そんなの当たり前でしょ」',
+    description: '正解しても「なんで正解なの？」と聞いてくる。不正解でも「なんで違うの？」と聞いてくる。つまり何を言っても「なんで？」と返ってくる。機嫌が天候に左右され、雨の日は危険度+30。教科書以外の知識を披露すると「どこでそれ覚えたの？」と尋問が始まる。',
+    strategies: ['晴れの日の最前列は神聖な安全地帯', '答える前に「先生、少し考えさせてください」で時間稼ぎ', '「先生の言う通りです」で8割の問いに対応可能'],
+    encounters: 934
+  },
+  {
+    id: 5, name: '伊藤先生', nickname: '永遠の寄り道人', subject: '国語',
+    avatar: '👴', types: ['謎','眠'], rarity: 2, danger: 20, mapArea: 'library', captured: false, capturedRarity: null,
+    catchphrase: '「それで思い出したんだけど」「急に思い出したぞ」',
+    description: '授業の本題に辿り着いたことが2学期で3回しかない。「羅生門」を教えるはずが芥川龍之介の好きな食べ物の話になり、それが大正時代の食文化になり、気づいたら終了チャイムが鳴っている。ただし脱線した先の話は面白くて人気が高い。',
+    strategies: ['「先生、それって〇〇に関係あるんですか？」で意図的に脱線させれば授業内容のテスト勉強が不要に', '関係ない質問を最初の5分にぶつけると残り授業が全部脱線する', 'このタイプはむしろ歓迎。戦略は「何もしない」'],
+    encounters: 412
+  }
+];
+
+let teachers = JSON.parse(localStorage.getItem('senseimon') || 'null') || SAMPLE_TEACHERS;
+let nextId = Math.max(...teachers.map(t => t.id), 0) + 1;
+let selectedAvatar = '👨‍🏫';
+let selectedTypes = ['火'];
+
+function saveData() {
+  localStorage.setItem('senseimon', JSON.stringify(teachers));
+}
+
+// ===== STARS =====
+function renderStars(rarity) {
+  let html = '';
+  for (let i = 1; i <= 5; i++) {
+    html += `<span class="${i <= rarity ? 'star-filled' : 'star-empty'}">★</span>`;
+  }
+  return html;
+}
+
+// ===== CARDS =====
+function renderCards() {
+  const query = document.getElementById('search-input').value.toLowerCase();
+  const typeFilter = document.getElementById('filter-type').value;
+  const grid = document.getElementById('card-grid');
+
+  let filtered = teachers.filter(t => {
+    const matchText = !query ||
+      t.name.toLowerCase().includes(query) ||
+      t.nickname.toLowerCase().includes(query) ||
+      (t.catchphrase || '').toLowerCase().includes(query) ||
+      (t.subject || '').toLowerCase().includes(query);
+    const matchType = !typeFilter || t.types.includes(typeFilter);
+    return matchText && matchType;
+  });
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <div class="emoji">🔍</div>
+      <p>その先生はまだ捕獲されていません</p>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(t => {
+    const danger = parseInt(t.danger) || 50;
+    const hpClass = danger >= 75 ? 'danger' : danger >= 40 ? 'normal' : 'safe';
+    const firstStrategy = t.strategies && t.strategies[0] ? t.strategies[0] : null;
+    const avatarBg = AVATAR_BG[t.avatar] || '#1e3a5f';
+
+    return `
+    <div class="teacher-card rarity-${t.rarity}" onclick="openDetail(${t.id})">
+      ${t.captured ? `<div class="captured-badge ${t.capturedRarity > t.rarity ? 'rare' : ''}">${t.capturedRarity > t.rarity ? '🌟 ★'+t.capturedRarity+' レア捕獲' : '✅ 捕獲済み'}</div>` : ''}
+      <div class="card-header">
+        <div class="teacher-avatar" style="background:${avatarBg}">${t.avatar}</div>
+        <div class="card-title">
+          <h3>${t.name}</h3>
+          <div class="nickname">「${t.nickname}」</div>
+          <div class="rarity-stars">${renderStars(t.rarity)}</div>
+          <div class="type-badges">
+            ${t.types.map(tp => `<span class="type-badge type-${tp}">${TYPE_EMOJI[tp] || ''} ${tp}</span>`).join('')}
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="catchphrase">${t.catchphrase || '（口癖未登録）'}</div>
+        <div class="hp-bar-container">
+          <div class="hp-bar-label">
+            <span>危険度</span>
+            <span>${danger}/100</span>
+          </div>
+          <div class="hp-bar">
+            <div class="hp-fill ${hpClass}" style="width:${danger}%"></div>
+          </div>
+        </div>
+        ${firstStrategy ? `
+        <div class="strategy-preview">
+          <strong>⚔️ 攻略法 (${t.strategies.length}件)</strong>
+          ${firstStrategy}
+        </div>` : '<div class="strategy-preview" style="color:var(--muted)">攻略法未登録</div>'}
+      </div>
+      <div class="card-footer">
+        <span class="encounter-count">📊 遭遇 ${(t.encounters || 0).toLocaleString()} 回</span>
+        <button class="detail-btn" onclick="event.stopPropagation();openDetail(${t.id})">詳細 →</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===== DETAIL MODAL =====
+function openDetail(id) {
+  const t = teachers.find(t => t.id === id);
+  if (!t) return;
+
+  const avatarBg = AVATAR_BG[t.avatar] || '#1e3a5f';
+  const danger = parseInt(t.danger) || 50;
+  const hpClass = danger >= 75 ? 'danger' : danger >= 40 ? 'normal' : 'safe';
+
+  document.getElementById('modal-title').textContent = `No.${String(id).padStart(3,'0')} ${t.name}`;
+
+  document.getElementById('modal-body').innerHTML = `
+    <div class="detail-avatar" style="font-size:4rem">${t.avatar}</div>
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="font-size:1.1rem;font-weight:900;color:#ffd700">「${t.nickname}」</div>
+      <div style="margin:6px 0">${renderStars(t.rarity)}</div>
+      <div class="type-badges" style="justify-content:center">
+        ${t.types.map(tp => `<span class="type-badge type-${tp}">${TYPE_EMOJI[tp] || ''} ${tp}</span>`).join('')}
+      </div>
+    </div>
+
+    <div class="hp-bar-container" style="margin-bottom:16px">
+      <div class="hp-bar-label"><span>危険度</span><span>${danger}/100</span></div>
+      <div class="hp-bar" style="height:10px">
+        <div class="hp-fill ${hpClass}" style="width:${danger}%"></div>
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <h4>担当教科</h4>
+      <p>${t.subject || '不明'}</p>
+    </div>
+
+    <div class="detail-section">
+      <h4>口癖</h4>
+      <p style="font-style:italic;color:#c8d6e5">${t.catchphrase || '（未登録）'}</p>
+    </div>
+
+    <div class="detail-section">
+      <h4>生態・特徴</h4>
+      <p>${t.description || '（未登録）'}</p>
+    </div>
+
+    <div class="detail-section">
+      <h4>⚔️ 攻略法 (${(t.strategies || []).length}件)</h4>
+      <ul class="strategy-list" id="strategy-list-${id}">
+        ${(t.strategies || []).map(s => `<li>${s}</li>`).join('') || '<li style="color:var(--muted)">まだ攻略法がありません</li>'}
+      </ul>
+      <div class="add-strategy">
+        <input type="text" id="new-strategy-${id}" placeholder="攻略法を追加する..." maxlength="100">
+        <button onclick="addStrategy(${id})">追加</button>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-top:16px">
+      <button onclick="incrementEncounter(${id})" style="padding:8px 20px;background:#2a2a4a;border:none;border-radius:10px;color:var(--text);cursor:pointer;font-size:0.85rem">
+        📊 遭遇した！ (${(t.encounters || 0).toLocaleString()}回)
+      </button>
+    </div>
+  `;
+
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function addStrategy(id) {
+  const input = document.getElementById(`new-strategy-${id}`);
+  const text = input.value.trim();
+  if (!text) return;
+
+  const t = teachers.find(t => t.id === id);
+  if (!t) return;
+  if (!t.strategies) t.strategies = [];
+  t.strategies.push(text);
+  saveData();
+
+  const list = document.getElementById(`strategy-list-${id}`);
+  const li = document.createElement('li');
+  li.textContent = text;
+  if (list.querySelector('li[style]')) list.innerHTML = '';
+  list.appendChild(li);
+  input.value = '';
+  showToast('攻略法を追加しました！');
+  renderCards();
+  renderRanking();
+}
+
+function incrementEncounter(id) {
+  const t = teachers.find(t => t.id === id);
+  if (!t) return;
+  t.encounters = (t.encounters || 0) + 1;
+  saveData();
+  openDetail(id);
+  renderCards();
+  renderRanking();
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModalBtn();
+}
+function closeModalBtn() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+// ===== REGISTER =====
+function selectAvatar(el) {
+  document.querySelectorAll('.avatar-option').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedAvatar = el.dataset.emoji;
+}
+
+function toggleType(el) {
+  el.classList.toggle('selected');
+  const type = el.dataset.type;
+  if (el.classList.contains('selected')) {
+    if (!selectedTypes.includes(type)) selectedTypes.push(type);
+  } else {
+    selectedTypes = selectedTypes.filter(t => t !== type);
+  }
+}
+
+function registerTeacher() {
+  const name = document.getElementById('f-name').value.trim();
+  const nickname = document.getElementById('f-nickname').value.trim();
+  const subject = document.getElementById('f-subject').value.trim();
+  const mapArea = document.getElementById('f-area').value;
+  const rarity = parseInt(document.getElementById('f-rarity').value);
+  const danger = parseInt(document.getElementById('f-danger').value) || 50;
+  const catchphrase = document.getElementById('f-catchphrase').value.trim();
+  const description = document.getElementById('f-description').value.trim();
+  const strategy = document.getElementById('f-strategy').value.trim();
+
+  if (!name) { showToast('先生の名前を入力してください', true); return; }
+  if (!nickname) { showToast('ニックネームを入力してください', true); return; }
+  if (selectedTypes.length === 0) { showToast('属性を選択してください', true); return; }
+
+  const teacher = {
+    id: nextId++,
+    name, nickname, subject, avatar: selectedAvatar, mapArea,
+    types: [...selectedTypes], rarity, danger, catchphrase, description,
+    strategies: strategy ? [strategy] : [],
+    encounters: 0, captured: false, capturedRarity: null
+  };
+
+  teachers.unshift(teacher);
+  saveData();
+  renderCards();
+  renderRanking();
+
+  // Reset form
+  document.getElementById('f-name').value = '';
+  document.getElementById('f-nickname').value = '';
+  document.getElementById('f-subject').value = '';
+  document.getElementById('f-catchphrase').value = '';
+  document.getElementById('f-description').value = '';
+  document.getElementById('f-strategy').value = '';
+  document.getElementById('f-rarity').value = '3';
+  document.getElementById('f-danger').value = '50';
+  selectedTypes = ['火'];
+  document.querySelectorAll('.type-option').forEach(el => {
+    el.classList.toggle('selected', el.dataset.type === '火');
+  });
+  selectedAvatar = '👨‍🏫';
+  document.querySelectorAll('.avatar-option').forEach(el => {
+    el.classList.toggle('selected', el.dataset.emoji === '👨‍🏫');
+  });
+
+  showToast(`🎉 「${name}」を図鑑に登録しました！`);
+  showScreen('zukan');
+}
+
+// ===== RANKING =====
+function renderRanking() {
+  const sorted = [...teachers].sort((a, b) => (b.danger || 0) - (a.danger || 0));
+  const list = document.getElementById('ranking-list');
+
+  list.innerHTML = sorted.map((t, i) => {
+    const rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : 'rank-other';
+    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}`;
+    return `
+    <div class="ranking-item" onclick="openDetail(${t.id})" style="cursor:pointer">
+      <div class="rank-num ${rankClass}">${medal}</div>
+      <div class="teacher-avatar" style="width:44px;height:44px;font-size:1.5rem;background:${AVATAR_BG[t.avatar]||'#1e3a5f'};border-radius:50%;display:flex;align-items:center;justify-content:center">${t.avatar}</div>
+      <div class="ranking-info">
+        <h3>${t.name} <span style="font-size:0.75rem;color:#ffd700">「${t.nickname}」</span></h3>
+        <p>${t.subject || '担当不明'} ／ ${t.types.map(tp => TYPE_EMOJI[tp] + tp).join(' ')}</p>
+      </div>
+      <div class="ranking-score">⚠️${t.danger || 0}</div>
+    </div>`;
+  }).join('');
+}
+
+// ===== SCREEN =====
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`screen-${name}`).classList.add('active');
+  const navBtn = [...document.querySelectorAll('.nav-btn')].find(b => (b.getAttribute('onclick') || '').includes(`'${name}'`));
+  if (navBtn) navBtn.classList.add('active');
+  if (name === 'ranking') renderRanking();
+  if (name === 'map') initMap();
+}
+
+// ===== TOAST =====
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = isError ? '#e74c3c' : '#27ae60';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ===== MAP =====
+const MAP_GRID_DATA = [
+  ['staffroom',   'hallway', 'classroom1',  'hallway', 'rooftop'],
+  ['hallway',     'hallway', 'hallway',     'hallway', 'hallway'],
+  ['library',     'hallway', 'classroom2',  'hallway', 'scienceroom'],
+  ['hallway',     'hallway', 'hallway',     'hallway', 'hallway'],
+  ['gym',         'hallway', 'classroom3',  'hallway', 'musicroom'],
+];
+
+const ROOM_INFO = {
+  staffroom:   { name: '職員室',  icon: '🏢', color: '#1e2d40' },
+  classroom1:  { name: '1年教室', icon: '📚', color: '#1a3060' },
+  classroom2:  { name: '2年教室', icon: '📚', color: '#163050' },
+  classroom3:  { name: '3年教室', icon: '📚', color: '#122840' },
+  library:     { name: '図書室',  icon: '📖', color: '#2d1f10' },
+  gym:         { name: '体育館',  icon: '🏃', color: '#102d10' },
+  scienceroom: { name: '理科室',  icon: '🔬', color: '#102d2d' },
+  musicroom:   { name: '音楽室',  icon: '🎵', color: '#2d102d' },
+  rooftop:     { name: '屋上',    icon: '🌤', color: '#102040' },
+  hallway:     { name: '廊下',    icon: '',   color: '#0d1520' },
+};
+
+const MAP_AREAS = ['staffroom','classroom1','classroom2','classroom3','library','gym','scienceroom','musicroom','rooftop'];
+
+let playerPos = { row: 0, col: 0 };
+let battleTeacherId = null;
+let bagOutcomes = [];
+let bagChosen = false;
+
+function initMap() {
+  let changed = false;
+  teachers.forEach(t => {
+    if (!t.mapArea) { t.mapArea = MAP_AREAS[Math.floor(Math.random() * MAP_AREAS.length)]; changed = true; }
+    if (t.captured === undefined) { t.captured = false; changed = true; }
+    if (t.capturedRarity === undefined) { t.capturedRarity = null; changed = true; }
+  });
+  if (changed) saveData();
+  renderMap();
+}
+
+function renderMap() {
+  const grid = document.getElementById('map-grid');
+  const promptEl = document.getElementById('map-battle-prompt');
+  const currentRoom = MAP_GRID_DATA[playerPos.row][playerPos.col];
+  const teachersInRoom = teachers.filter(t => t.mapArea === currentRoom);
+
+  grid.innerHTML = MAP_GRID_DATA.map((row, ri) =>
+    row.map((room, ci) => {
+      const info = ROOM_INFO[room];
+      const isHallway = room === 'hallway';
+      const isPlayer = ri === playerPos.row && ci === playerPos.col;
+      const roomTeachers = teachers.filter(t => t.mapArea === room);
+      return `<div class="map-cell${isHallway ? ' hallway-cell' : ''}${isPlayer ? ' player-here' : ''}"
+        style="background:${info.color}"
+        ${!isHallway ? `onclick="movePlayer(${ri},${ci})"` : ''}>
+        ${isPlayer ? '<span class="player-icon">🔴</span>' : ''}
+        ${info.icon ? `<span class="map-cell-icon">${info.icon}</span>` : ''}
+        <span class="map-cell-name">${info.name}</span>
+        <div class="map-teacher-icons">
+          ${roomTeachers.map(t =>
+            `<span class="map-teacher-dot${t.captured ? ' captured' : ''}" title="${t.name}">${t.avatar}</span>`
+          ).join('')}
+        </div>
+      </div>`;
+    }).join('')
+  ).join('');
+
+  if (currentRoom !== 'hallway') {
+    const uncaptured = teachersInRoom.filter(t => !t.captured);
+    if (uncaptured.length > 0) {
+      promptEl.innerHTML = `<div class="battle-prompt">
+        <h3>⚠️ 野生の先生が現れた！</h3>
+        <div class="battle-prompt-teachers">
+          ${uncaptured.map(t => `
+            <div class="battle-prompt-teacher" onclick="startBattle(${t.id})">
+              <span>${t.avatar}</span><span>${t.name}</span>
+              <span style="font-size:0.7rem;color:#ffd700">★${t.rarity}</span>
+            </div>`).join('')}
+        </div>
+      </div>`;
+    } else if (teachersInRoom.length > 0) {
+      promptEl.innerHTML = `<div class="map-status-msg success">✅ このエリアの先生は全員捕獲済み！</div>`;
+    } else {
+      promptEl.innerHTML = `<div class="map-status-msg">このエリアに先生はいません</div>`;
+    }
+  } else {
+    promptEl.innerHTML = '';
+  }
+}
+
+function movePlayer(row, col) {
+  playerPos = { row, col };
+  renderMap();
+}
+
+// ===== BATTLE =====
+function startBattle(id) {
+  battleTeacherId = id;
+  const t = teachers.find(t => t.id === id);
+  if (!t) return;
+
+  document.getElementById('battle-avatar').textContent = t.avatar;
+  document.getElementById('battle-name').textContent = `${t.name}「${t.nickname}」`;
+  document.getElementById('battle-info').textContent = `${t.subject || '担当不明'} ／ 危険度 ${t.danger}/100`;
+  document.getElementById('battle-types').innerHTML = t.types.map(tp =>
+    `<span class="type-badge type-${tp}">${TYPE_EMOJI[tp] || ''} ${tp}</span>`
+  ).join('');
+
+  document.getElementById('battle-instruction').textContent = '袋を1つ選んでください！';
+  const banner = document.getElementById('battle-result-banner');
+  banner.className = 'battle-result-banner';
+  document.getElementById('battle-close-btn').style.display = 'none';
+
+  bagChosen = false;
+  bagOutcomes = Array.from({length: 6}, () => {
+    const r = Math.random();
+    if (r < 0.10) return 'daikiatari';
+    if (r < 0.50) return 'atari';
+    return 'hazure';
+  });
+
+  document.getElementById('bags-container').innerHTML = bagOutcomes.map((_, i) =>
+    `<div class="bag" id="bag-${i}" onclick="selectBag(${i})">🎒</div>`
+  ).join('');
+
+  document.getElementById('battle-overlay').classList.add('open');
+}
+
+function selectBag(index) {
+  if (bagChosen) return;
+  bagChosen = true;
+
+  const outcome = bagOutcomes[index];
+  const EMOJIS = { daikiatari: '🌟', atari: '✅', hazure: '💨' };
+  const TEXTS  = { daikiatari: '大当たり！', atari: '当たり！', hazure: 'はずれ...' };
+
+  const bag = document.getElementById(`bag-${index}`);
+  bag.classList.add('opened', `result-${outcome}`);
+  bag.innerHTML = `<span style="font-size:2.4rem">${EMOJIS[outcome]}</span><span class="bag-result-text">${TEXTS[outcome]}</span>`;
+
+  setTimeout(() => {
+    bagOutcomes.forEach((o, i) => {
+      if (i === index) return;
+      const b = document.getElementById(`bag-${i}`);
+      b.classList.add('opened', `result-${o}`);
+      b.innerHTML = `<span style="font-size:2.4rem">${EMOJIS[o]}</span><span class="bag-result-text">${TEXTS[o]}</span>`;
+    });
+  }, 500);
+
+  setTimeout(() => showBattleResult(outcome), 1100);
+}
+
+function showBattleResult(outcome) {
+  const t = teachers.find(t => t.id === battleTeacherId);
+  if (!t) return;
+
+  const banner = document.getElementById('battle-result-banner');
+  const titleEl = document.getElementById('battle-result-title');
+  const descEl  = document.getElementById('battle-result-desc');
+  const closeBtn = document.getElementById('battle-close-btn');
+
+  t.encounters = (t.encounters || 0) + 1;
+
+  if (outcome === 'daikiatari') {
+    const bonus = Math.random() < 0.35 ? 2 : 1;
+    const newRarity = Math.min(5, t.rarity + bonus);
+    t.captured = true;
+    t.capturedRarity = newRarity;
+    saveData(); renderCards(); renderRanking();
+    banner.className = 'battle-result-banner daikiatari';
+    titleEl.textContent = '🌟 大当たり！';
+    descEl.textContent = `「${t.name}」のレアバージョン（★${newRarity}）を捕獲しました！`;
+    closeBtn.textContent = 'マップに戻る';
+  } else if (outcome === 'atari') {
+    t.captured = true;
+    t.capturedRarity = t.rarity;
+    saveData(); renderCards(); renderRanking();
+    banner.className = 'battle-result-banner atari';
+    titleEl.textContent = '✅ 捕獲成功！';
+    descEl.textContent = `「${t.name}」を図鑑に捕獲しました！（★${t.rarity}）`;
+    closeBtn.textContent = 'マップに戻る';
+  } else {
+    saveData(); renderCards();
+    banner.className = 'battle-result-banner hazure';
+    titleEl.textContent = '💨 はずれ...';
+    descEl.textContent = `「${t.name}」に逃げられました！もう一度挑戦しよう！`;
+    closeBtn.textContent = 'マップに戻る';
+  }
+
+  document.getElementById('battle-instruction').textContent = '';
+  closeBtn.style.display = 'block';
+}
+
+function closeBattle() {
+  document.getElementById('battle-overlay').classList.remove('open');
+  renderMap();
+}
+
+// ===== RESET =====
+function resetData() {
+  if (!confirm('全データをリセットしてサンプル5件に戻します。よろしいですか？\n（追加した先生・捕獲状況がすべて消えます）')) return;
+  localStorage.removeItem('senseimon');
+  location.reload();
+}
+
+// ===== INIT =====
+renderCards();
+</script>
+</body>
+</html>
